@@ -16,20 +16,24 @@ import (
 	"fmt"
 	_ "github.com/lib/pq"
 	"testing"
-	"time"
+	// "time"
 )
 
 type testType struct {
-	Id   int64  `db:"id" dbopt:"id,auto"`
-	Text string `db:"text"`
-	B    bool   `db:"b"`
-	C    int64  `db:"c" dbopt:"created"`
-	M    int64  `db:"m" dbopt:"modified"`
+	Id int64  `db:"id" dbopt:"id,auto"`
+	T  string `db:"text"`
+	B  bool   `db:"b"`
+	C  int64  `db:"c" dbopt:"created"`
+	M  int64  `db:"m" dbopt:"modified"`
+}
+
+func initDb() (*sql.DB, error) {
+	return sql.Open("postgres", fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s sslmode=disable",
+		"localhost", 5432, "test", "test", "test"))
 }
 
 func TestQuery(t *testing.T) {
-	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s sslmode=disable",
-		"localhost", 5432, "test", "test", "test"))
+	db, err := initDb()
 	if err != nil {
 		t.Error(err)
 		return
@@ -43,7 +47,7 @@ func TestQuery(t *testing.T) {
 	}
 
 	// insert
-	t1 := &testType{Text: "test1", B: true}
+	t1 := &testType{T: "test1", B: true}
 	err = dbh.Insert(t1)
 	if err != nil {
 		t.Error(err)
@@ -52,9 +56,9 @@ func TestQuery(t *testing.T) {
 
 	fmt.Println(t1.Id)
 
-	time.Sleep(1 * time.Second)
+	// time.Sleep(1 * time.Second)
 
-	t2 := &testType{Text: "test2", B: false}
+	t2 := &testType{T: "test2", B: false}
 	err = dbh.Insert(t2)
 	if err != nil {
 		t.Error(err)
@@ -63,27 +67,16 @@ func TestQuery(t *testing.T) {
 
 	fmt.Println(t2.Id)
 
-	time.Sleep(2 * time.Second)
+	// time.Sleep(2 * time.Second)
 
 	// update
-	err = dbh.Update(&testType{Id: t1.Id, Text: "test3", B: false})
+	t1.T = "test3"
+	t1.B = false
+	err = dbh.Update(t1)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-
-	// delete
-	// err = dbh.Delete(t1)
-	// if err != nil {
-	// 	t.Error(err)
-	// 	return
-	// }
-
-	// err = dbh.Delete(t2)
-	// if err != nil {
-	// 	t.Error(err)
-	// 	return
-	// }
 
 	// select
 	q, err := dbh.Prepare("SELECT * FROM test")
@@ -122,7 +115,7 @@ func TestQuery(t *testing.T) {
 
 	var s string
 	ok, err := queryString.Query(&s, map[string]interface{}{
-		"id": 1,
+		"id": t1.Id,
 	})
 
 	if err != nil {
@@ -132,4 +125,17 @@ func TestQuery(t *testing.T) {
 
 	fmt.Println(ok)
 	fmt.Println(s)
+
+	// delete
+	err = dbh.Delete(t1)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err = dbh.Delete(t2)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 }
