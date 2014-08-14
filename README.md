@@ -66,7 +66,7 @@ db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%d dbname=%s user=%s p
 defer db.Close()
 
 // create database helper
-dbh := dbhelper.New(db, dbhelper.Posgresql{})
+dbh := dbhelper.New(db, dbhelper.Postgresql{})
 
 // map type to table, check error
 err = dbh.AddTable(someStructType{}, "table_name")

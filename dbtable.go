@@ -294,8 +294,8 @@ func (tbl *dbTable) prepareStandardQueries() error {
 
 	// insert query postfix
 	insertPostfix := ""
-	if dbt, ok := tbl.dbHelper.dbType.(hasInsertPostfix); ok {
-		insertPostfix = dbt.insertPostfix(tbl)
+	if sqld, ok := tbl.dbHelper.sqlDialect.(hasInsertPostfix); ok {
+		insertPostfix = sqld.insertPostfix(tbl)
 	}
 
 	// insert SQL query

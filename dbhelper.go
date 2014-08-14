@@ -62,16 +62,16 @@ type DbHelper struct {
 	// Pointer to underlying sql.DB.
 	Db *sql.DB
 
-	dbType DbType
-	tables map[reflect.Type]*dbTable
+	sqlDialect SqlDialect
+	tables     map[reflect.Type]*dbTable
 }
 
 // New returns new DbHelper.
-func New(db *sql.DB, dbType DbType) *DbHelper {
+func New(db *sql.DB, sqlDialect SqlDialect) *DbHelper {
 	return &DbHelper{
-		Db:     db,
-		dbType: dbType,
-		tables: make(map[reflect.Type]*dbTable),
+		Db:         db,
+		sqlDialect: sqlDialect,
+		tables:     make(map[reflect.Type]*dbTable),
 	}
 }
 
@@ -134,7 +134,7 @@ func (dbh *DbHelper) getTable(t reflect.Type) (*dbTable, error) {
 
 func (dbh *DbHelper) getPlaceholders(n int) []string {
 	a := make([]string, n, n)
-	ph := dbh.dbType.placeholder()
+	ph := dbh.sqlDialect.placeholder()
 	for i := 1; i < n; i++ {
 		a[i] = ph.next()
 	}
@@ -144,7 +144,7 @@ func (dbh *DbHelper) getPlaceholders(n int) []string {
 
 // Prepares SQL query. Prepared query can be executed with different parameter values.
 func (dbh *DbHelper) Prepare(query string) (*Pstmt, error) {
-	ph := dbh.dbType.placeholder()
+	ph := dbh.sqlDialect.placeholder()
 	params := paramRegexp.FindAllString(query, -1)
 	for i, p := range params {
 		if len(p) < 2 {
@@ -225,9 +225,9 @@ func (dbh *DbHelper) Insert(i interface{}) error {
 	}
 
 	var id int64
-	if dbt, ok := dbh.dbType.(hasCustomInsert); ok {
+	if sqld, ok := dbh.sqlDialect.(hasCustomInsert); ok {
 		// custom insert
-		id, err = dbt.insert(tbl, params)
+		id, err = sqld.insert(tbl, params)
 		if err != nil {
 			return err
 		}
