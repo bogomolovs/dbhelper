@@ -55,7 +55,7 @@ type someStructType struct {
   
   // this field will be automatically updated on record insertion
   // and modification
-  Modified int64 `db:"created" dbopt:"modified"`
+  Modified int64 `db:"modified" dbopt:"modified"`
 }
 ```
 
