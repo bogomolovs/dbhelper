@@ -177,6 +177,14 @@ func (tbl *dbTable) parseField(field reflect.StructField) ([]*dbField, error) {
 				return nil, err
 			}
 
+			// append indexes of sub-fields
+			for _, f := range subFields {
+				l := len(f.index) + 1
+				newIndex := make([]int, 1, l)
+				newIndex[0] = field.Index[0]
+				f.index = append(newIndex, f.index...)
+			}
+
 			// append fields from embedded structure
 			fields = append(fields, subFields...)
 		}
