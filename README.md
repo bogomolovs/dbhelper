@@ -99,8 +99,10 @@ The main motivation to do this was performance. Prepared queries should work fas
 
 Some benchmark results (average of 5 runs):
 
-> BenchmarkPreparedQueries      2000      851048 ns/op
-> BenchmarkDbHelper             2000      914452 ns/op
-> BenchmarkGorp                 1000     1409280 ns/op
+```
+BenchmarkPreparedQueries      2000      851048 ns/op
+BenchmarkDbHelper             2000      914452 ns/op
+BenchmarkGorp                 1000     1409280 ns/op
+```
 
 Not sure how reliable these results are, but one can see that the overhead is quite small. The comparison to `gorp` here is not really fare, because it does not use prepared queries. However, this project was inspired by it and would make no sense if it was slower.
