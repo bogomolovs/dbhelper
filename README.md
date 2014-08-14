@@ -36,10 +36,28 @@ type testType struct {
 }
 ```
 
-Also `dbopt:"skip"` tag is supported and means that field will be skipped and nod mapped to database table.
+Also `dbopt:"skip"` tag is supported and means that field will be skipped and nod mapped to database table. if `db` tag is not set - field name will be used instead.
 
 Usage
 ========
+
+```go
+type someStructType struct {
+  // structure must have a field with dbopt: "id"
+  // this field will be automatically updated on record insertion
+  Id int64 `db:"id" dbopt:"id,auto"`
+
+  // data field
+  SomeField string `db:"some_field"`
+
+  // this field will be automatically updated on record insertion
+  Created int64 `db:"created" dbopt:"created"`
+  
+  // this field will be automatically updated on record insertion
+  // and modification
+  Modified int64 `db:"created" dbopt:"modified"`
+}
+```
 
 ```go
 // create connection to database, check error
@@ -87,7 +105,6 @@ err = q.Query(&str, map[string]interface{}{
 
 // delete record
 err = dbh.Delete(s)
-
 ```
 
 See tests for examples. Embedded structures should be supported as weel, but I have not tested this.
