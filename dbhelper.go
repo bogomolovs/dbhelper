@@ -46,7 +46,9 @@ func wrapError(err error) error {
 
 // DbHelper contains all data about database and tables.
 type DbHelper struct {
-	db     *sql.DB
+	// Pointer to underlying sql.DB.
+	Db *sql.DB
+
 	dbType DbType
 	tables map[reflect.Type]*dbTable
 }
@@ -54,7 +56,7 @@ type DbHelper struct {
 // New returns new DbHelper.
 func New(db *sql.DB, dbType DbType) *DbHelper {
 	return &DbHelper{
-		db:     db,
+		Db:     db,
 		dbType: dbType,
 		tables: make(map[reflect.Type]*dbTable),
 	}
@@ -144,7 +146,7 @@ func (dbh *DbHelper) Prepare(query string) (*Pstmt, error) {
 	}
 
 	// prepare query
-	stmt, err := dbh.db.Prepare(query)
+	stmt, err := dbh.Db.Prepare(query)
 	if err != nil {
 		return nil, wrapError(err)
 	}
