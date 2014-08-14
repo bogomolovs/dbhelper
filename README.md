@@ -109,7 +109,7 @@ err = dbh.Delete(s)
 
 See tests for examples. Embedded structures should be supported as weel, but I have not tested this.
 
-Performance
+Benchmarks
 ========
 
 The main motivation to do this was performance. Prepared queries should work faster and I tried to add as small overhead as possible for the convenience of named placeholders and mapping results to structure fields.
@@ -117,9 +117,15 @@ The main motivation to do this was performance. Prepared queries should work fas
 Some benchmark results (average of 5 runs):
 
 ```
+go test -bench .
 BenchmarkPreparedQueries      2000      851048 ns/op
-BenchmarkDbHelper             2000      914452 ns/op
-BenchmarkGorp                 1000     1409280 ns/op
+BenchmarkDbHelper             2000      914452 ns/op (overhead - 7.45%)
+BenchmarkGorp                 1000     1409280 ns/op (overhead - 65.6%)
+
+go test -bench . -benchtime 10s
+BenchmarkPreparedQueries      2000      932642 ns/op
+BenchmarkDbHelper             2000     1011751 ns/op (overhead - 8.48%)
+BenchmarkGorp                 1000     1723938 ns/op (overhead - 84.8%)
 ```
 
-Not sure how reliable these results are, but one can see that the overhead is quite small. The comparison to `gorp` here is not really fare, because it does not use prepared queries. However, this project was inspired by it and would make no sense if it was slower.
+Not sure how reliable these results are, but one can see that the overhead is quite small. The comparison to `gorp` here is not really fare, because it does not use prepared queries. However, this project was inspired by it and would make no sense if it was slower. Ten times smaller overhead makes sense, at least for my needs.
