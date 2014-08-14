@@ -199,7 +199,7 @@ func (dbh *DbHelper) PrepareSelect(i interface{}, column string) (*Pstmt, error)
 	}
 
 	// select query
-	query := fmt.Sprintf("SELECT * FORM %s WHERE %s = :%s", tbl.name, column, column)
+	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = :%s", tbl.name, column, column)
 
 	// prepare query
 	return dbh.Prepare(query)
