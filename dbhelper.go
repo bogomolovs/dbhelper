@@ -34,10 +34,7 @@ func typeOf(i interface{}) (reflect.Type, error) {
 		return nil, errors.New("dbhelper: cannot use nil to define type")
 	}
 
-	v := reflect.ValueOf(i)
-	iv := reflect.Indirect(v)
-
-	return iv.Type(), nil
+	return reflect.Indirect(reflect.ValueOf(i)).Type(), nil
 }
 
 func wrapError(err error) error {
@@ -171,6 +168,35 @@ func (dbh *DbHelper) Prepare(query string) (*Pstmt, error) {
 	}
 
 	return pstmp, nil
+}
+
+// Prepares standard select SQL query by value of one column.
+// Prepared query can be executed with different parameter values.
+func (dbh *DbHelper) PrepareSelect(i interface{}, column string) (*Pstmt, error) {
+	// get type
+	t, err := typeOf(i)
+	if err != nil {
+		return nil, err
+	}
+
+	// get table
+	tbl, err := dbh.getTable(t)
+	if err != nil {
+		return nil, err
+	}
+
+	// check column name
+	_, ok := tbl.fields[column]
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("dbhelper: structure type '%v' has no field assigned to column '%s' of table '%s'",
+			t, column, tbl.name))
+	}
+
+	// select query
+	query := fmt.Sprintf("SELECT * FORM %s WHERE %s = :%s", tbl.name, column, column)
+
+	// prepare query
+	return dbh.Prepare(query)
 }
 
 // Prepares parameters for standard query.
