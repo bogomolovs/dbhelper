@@ -23,6 +23,7 @@ import (
 
 var (
 	paramRegexp *regexp.Regexp
+	errorNil    = errors.New("dbhelper: cannot use nil to define type")
 )
 
 func init() {
@@ -31,7 +32,7 @@ func init() {
 
 func typeOf(i interface{}) (reflect.Type, error) {
 	if i == nil {
-		return nil, errors.New("dbhelper: cannot use nil to define type")
+		return nil, errorNil
 	}
 
 	return reflect.Indirect(reflect.ValueOf(i)).Type(), nil

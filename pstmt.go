@@ -123,6 +123,10 @@ func (pstmt *Pstmt) Exec(params interface{}) (int64, error) {
 // If query has only one parameter, params can be the value of that parameter.
 // If query has more than one parameter, params must be a map[string]interface{}.
 func (pstmt *Pstmt) Query(i interface{}, params interface{}) (int64, error) {
+	if i == nil {
+		return 0, errorNil
+	}
+
 	var err error
 	returnSlice := false
 	returnStruct := false
