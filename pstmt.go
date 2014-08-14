@@ -26,10 +26,11 @@ type Pstmt struct {
 }
 
 // Returns a list of values for query parameters
-func (pstmt *Pstmt) getValues(params map[string]interface{}) ([]interface{}, error) {
+func (pstmt *Pstmt) getValues(params interface{}) ([]interface{}, error) {
 	// number of parameters
 	num := len(pstmt.params)
 
+	// there are no parameters
 	if params == nil {
 		// if params = nil
 		if num == 0 {
@@ -44,20 +45,39 @@ func (pstmt *Pstmt) getValues(params map[string]interface{}) ([]interface{}, err
 	// slice containing values
 	values := make([]interface{}, num, num)
 
-	// fill values in correct order
-	for i, p := range pstmt.params {
-		v, ok := params[p]
-		if !ok {
-			return nil, errors.New(fmt.Sprintf("dbhelper: value for parameter '%s' is missing", p))
+	// get value of params
+	paramsValue := reflect.ValueOf(params)
+
+	// get type of params
+	paramsType := paramsValue.Type()
+
+	if paramsType.Kind() == reflect.Map {
+		// fill values in correct order
+		for i, p := range pstmt.params {
+			// value
+			v := paramsValue.MapIndex(reflect.ValueOf(p))
+			if !v.IsValid() {
+				return nil, errors.New(fmt.Sprintf("dbhelper: value for parameter '%s' is missing", p))
+			}
+
+			values[i] = v.Interface()
+		}
+	} else {
+		if num > 1 {
+			return nil, errors.New("dbhelper: query has more than one parameter, params must be a map[string]interface{}")
 		}
 
-		values[i] = v
+		if !checkFieldType(paramsType) {
+			return nil, errors.New(fmt.Sprintf("dbhelper: wrong parameter type '%v'", paramsType))
+		}
+
+		values[0] = paramsValue.Interface()
 	}
 
 	return values, nil
 }
 
-func (pstmt *Pstmt) exec(params map[string]interface{}) (sql.Result, error) {
+func (pstmt *Pstmt) exec(params interface{}) (sql.Result, error) {
 	// get parameter values for query
 	values, err := pstmt.getValues(params)
 	if err != nil {
@@ -80,8 +100,10 @@ func (pstmt *Pstmt) exec(params map[string]interface{}) (sql.Result, error) {
 }
 
 // Executes prepared statement with provided parameter values.
+// If query has only one parameter, params can be the value of that parameter.
+// If query has more than one parameter, params must be a map[string]interface{}.
 // Returns number of affected rows or -1 if this number cannot be obtained.
-func (pstmt *Pstmt) Exec(params map[string]interface{}) (int64, error) {
+func (pstmt *Pstmt) Exec(params interface{}) (int64, error) {
 	// execute query
 	res, err := pstmt.exec(params)
 	if err != nil {
@@ -98,7 +120,9 @@ func (pstmt *Pstmt) Exec(params map[string]interface{}) (int64, error) {
 }
 
 // Executes prepared query with provided parameter values. Returns number of processed rows.
-func (pstmt *Pstmt) Query(i interface{}, params map[string]interface{}) (int64, error) {
+// If query has only one parameter, params can be the value of that parameter.
+// If query has more than one parameter, params must be a map[string]interface{}.
+func (pstmt *Pstmt) Query(i interface{}, params interface{}) (int64, error) {
 	var err error
 	returnSlice := false
 	returnStruct := false

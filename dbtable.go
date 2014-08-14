@@ -195,15 +195,7 @@ func (tbl *dbTable) parseField(field reflect.StructField) ([]*dbField, error) {
 		}
 
 		// check that field has supported type
-		if field.Type.Kind() != reflect.String &&
-			field.Type.Kind() != reflect.Int &&
-			field.Type.Kind() != reflect.Int8 &&
-			field.Type.Kind() != reflect.Int16 &&
-			field.Type.Kind() != reflect.Int32 &&
-			field.Type.Kind() != reflect.Int64 &&
-			field.Type.Kind() != reflect.Float32 &&
-			field.Type.Kind() != reflect.Float64 &&
-			field.Type.Kind() != reflect.Bool {
+		if !checkFieldType(field.Type) {
 			return nil, errors.New(fmt.Sprintf("dbhelper: field '%s' of structure type'%v' has unsupported type '%v'",
 				field.Name, tbl.structType, field.Type))
 		}

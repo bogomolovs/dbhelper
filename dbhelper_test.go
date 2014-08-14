@@ -118,7 +118,7 @@ func TestQuery(t *testing.T) {
 	}
 
 	var s string
-	ok, err := queryString.Query(&s, map[string]interface{}{
+	num, err := queryString.Query(&s, map[string]interface{}{
 		"id": t1.Id,
 	})
 
@@ -127,8 +127,20 @@ func TestQuery(t *testing.T) {
 		return
 	}
 
-	fmt.Println(ok)
+	fmt.Println(num)
 	fmt.Println(s)
+
+	// or simplier
+	var s2 string
+	num, err = queryString.Query(&s2, t1.Id)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	fmt.Println(num)
+	fmt.Println(s2)
 
 	// delete
 	_, err = dbh.Delete(t1)
