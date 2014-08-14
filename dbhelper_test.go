@@ -76,7 +76,7 @@ func TestQuery(t *testing.T) {
 	// update
 	t1.T = "another text"
 	t1.B = false
-	err = dbh.Update(t1)
+	_, err = dbh.Update(t1)
 	if err != nil {
 		t.Error(err)
 		return
@@ -131,13 +131,13 @@ func TestQuery(t *testing.T) {
 	fmt.Println(s)
 
 	// delete
-	err = dbh.Delete(t1)
+	_, err = dbh.Delete(t1)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	err = dbh.Delete(t2)
+	_, err = dbh.Delete(t2)
 	if err != nil {
 		t.Error(err)
 		return

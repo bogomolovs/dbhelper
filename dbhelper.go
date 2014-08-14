@@ -220,7 +220,7 @@ func (dbh *DbHelper) Insert(i interface{}) error {
 		}
 	} else {
 		// standart insert
-		res, err := tbl.insertQuery.Exec(params)
+		res, err := tbl.insertQuery.exec(params)
 		if err != nil {
 			return err
 		}
@@ -248,16 +248,17 @@ func (dbh *DbHelper) Insert(i interface{}) error {
 	return nil
 }
 
-// Updates record in database. Field with option 'id' is used to define the record in database.
+// Updates record(s) in database and returns number of affected rows.
+// Field with option 'id' is used to define the record in database.
 // This means that field with option 'id' cannot be updated.
-func (dbh *DbHelper) Update(i interface{}) error {
+func (dbh *DbHelper) Update(i interface{}) (int64, error) {
 	// get current timestamp
 	time := time.Now().UTC().Unix()
 
 	// prepare parameters
 	tbl, params, v, err := dbh.prepareParams(i)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	// set modified time
@@ -266,9 +267,9 @@ func (dbh *DbHelper) Update(i interface{}) error {
 	}
 
 	// standart update
-	_, err = tbl.updateQuery.Exec(params)
+	num, err := tbl.updateQuery.Exec(params)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	// update modified field in structure
@@ -276,22 +277,23 @@ func (dbh *DbHelper) Update(i interface{}) error {
 		v.FieldByIndex(tbl.modifiedField.index).SetInt(time)
 	}
 
-	return nil
+	return num, nil
 }
 
-// Deletes record in database. Field with option 'id' is used to define the record in database.
-func (dbh *DbHelper) Delete(i interface{}) error {
+// Deletes record(s) in database and returns number of affected rows.
+// Field with option 'id' is used to define the record in database.
+func (dbh *DbHelper) Delete(i interface{}) (int64, error) {
 	// prepare parameters
 	tbl, params, _, err := dbh.prepareParams(i)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	// standart update
-	_, err = tbl.deleteQuery.Exec(params)
+	num, err := tbl.deleteQuery.Exec(params)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	return nil
+	return num, nil
 }

@@ -106,14 +106,14 @@ func BenchmarkDbHelper(b *testing.B) {
 		// update
 		t1.T = "new text"
 		t1.B = false
-		err = dbh.Update(t1)
+		_, err = dbh.Update(t1)
 		if err != nil {
 			b.Error(err)
 			return
 		}
 
 		// delete
-		err = dbh.Delete(t1)
+		_, err = dbh.Delete(t1)
 		if err != nil {
 			b.Error(err)
 			return

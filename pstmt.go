@@ -57,8 +57,7 @@ func (pstmt *Pstmt) getValues(params map[string]interface{}) ([]interface{}, err
 	return values, nil
 }
 
-// Executes prepared statement with provided parameter values.
-func (pstmt *Pstmt) Exec(params map[string]interface{}) (sql.Result, error) {
+func (pstmt *Pstmt) exec(params map[string]interface{}) (sql.Result, error) {
 	// get parameter values for query
 	values, err := pstmt.getValues(params)
 	if err != nil {
@@ -80,8 +79,26 @@ func (pstmt *Pstmt) Exec(params map[string]interface{}) (sql.Result, error) {
 	return res, nil
 }
 
-// Executes prepared query with provided parameter values.
-func (pstmt *Pstmt) Query(i interface{}, params map[string]interface{}) (bool, error) {
+// Executes prepared statement with provided parameter values.
+// Returns number of affected rows or -1 if this number cannot be obtained.
+func (pstmt *Pstmt) Exec(params map[string]interface{}) (int64, error) {
+	// execute query
+	res, err := pstmt.exec(params)
+	if err != nil {
+		return 0, err
+	}
+
+	// get number of affected rows
+	num, err := res.RowsAffected()
+	if err != nil {
+		return -1, nil
+	}
+
+	return num, nil
+}
+
+// Executes prepared query with provided parameter values. Returns number of processed rows.
+func (pstmt *Pstmt) Query(i interface{}, params map[string]interface{}) (int64, error) {
 	var err error
 	returnSlice := false
 	returnStruct := false
@@ -91,7 +108,7 @@ func (pstmt *Pstmt) Query(i interface{}, params map[string]interface{}) (bool, e
 	slicePtrType := slicePtrValue.Type()
 
 	if slicePtrType.Kind() != reflect.Ptr {
-		return false, errors.New("dbhelper: pointer expected")
+		return 0, errors.New("dbhelper: pointer expected")
 	}
 
 	// get slice value
@@ -112,7 +129,7 @@ func (pstmt *Pstmt) Query(i interface{}, params map[string]interface{}) (bool, e
 	}
 
 	if returnPtrType.Kind() != reflect.Ptr {
-		return false, errors.New("dbhelper: pointer to a slice of pointers to structures expected")
+		return 0, errors.New("dbhelper: pointer to a slice of pointers to structures expected")
 	}
 
 	// get return type
@@ -126,14 +143,14 @@ func (pstmt *Pstmt) Query(i interface{}, params map[string]interface{}) (bool, e
 	if returnStruct {
 		tbl, err = pstmt.dbHelper.getTable(returnType)
 		if err != nil {
-			return false, err
+			return 0, err
 		}
 	}
 
 	// get parameter values for query
 	values, err := pstmt.getValues(params)
 	if err != nil {
-		return false, err
+		return 0, err
 	}
 
 	// perform query
@@ -145,7 +162,7 @@ func (pstmt *Pstmt) Query(i interface{}, params map[string]interface{}) (bool, e
 	}
 
 	if err != nil {
-		return false, wrapError(err)
+		return 0, wrapError(err)
 	}
 
 	// close rows on exit
@@ -159,11 +176,11 @@ func (pstmt *Pstmt) Query(i interface{}, params map[string]interface{}) (bool, e
 	// get column names
 	columns, err := rows.Columns()
 	if err != nil {
-		return false, wrapError(err)
+		return 0, wrapError(err)
 	}
 
 	// read rows data to structures
-	dataRead := false
+	num := int64(0)
 	for rows.Next() {
 		// create new structure and get a pointer to it
 		var returnPtrValue reflect.Value
@@ -198,10 +215,10 @@ func (pstmt *Pstmt) Query(i interface{}, params map[string]interface{}) (bool, e
 
 		// check scan error
 		if err != nil {
-			return false, wrapError(err)
+			return 0, wrapError(err)
 		}
 
-		dataRead = true
+		num++
 
 		if returnSlice {
 			// append pointer to new structure to slice
@@ -211,5 +228,5 @@ func (pstmt *Pstmt) Query(i interface{}, params map[string]interface{}) (bool, e
 		}
 	}
 
-	return dataRead, nil
+	return num, nil
 }

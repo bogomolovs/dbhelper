@@ -79,19 +79,19 @@ err = dbh.Insert(s)
 
 // update record, modified field (if present) is automatically updated
 s.SomeField = "new_value"
-err = dbh.Update(s)
+_, err = dbh.Update(s)
 
 // custom select query to get all records, check errors
 q1, err := dbh.Prepare("SELECT * FROM table_name")
 
 var a []*someStructType
-err = q.Query(&a, nil)
+_, err = q.Query(&a, nil)
 
 // custom select query to get record with id = 3, check errors
 q2, err := dbh.Prepare("SELECT * FROM table_name WHERE id = :id")
 
 var r someStructType
-err = q.Query(&r, map[string]interface{}{
+_, err = q.Query(&r, map[string]interface{}{
   "id": 3,
 })
 
@@ -99,12 +99,12 @@ err = q.Query(&r, map[string]interface{}{
 q2, err := dbh.Prepare("SELECT some_field FROM table_name WHERE id = :id")
 
 var str string
-err = q.Query(&str, map[string]interface{}{
+_, err = q.Query(&str, map[string]interface{}{
   "id": 3,
 })
 
 // delete record
-err = dbh.Delete(s)
+_, err = dbh.Delete(s)
 ```
 
 See tests for examples. Embedded structures are also supported, so this will work:
