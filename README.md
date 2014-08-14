@@ -85,21 +85,21 @@ _, err = dbh.Update(s)
 q1, err := dbh.Prepare("SELECT * FROM table_name")
 
 var a []*someStructType
-_, err = q.Query(&a, nil)
+_, err = q1.Query(&a, nil)
 
 // custom select query to get record with id = 3, check errors
 q2, err := dbh.Prepare("SELECT * FROM table_name WHERE id = :id")
 
 var r someStructType
-_, err = q.Query(&r, map[string]interface{}{
+_, err = q2.Query(&r, map[string]interface{}{
   "id": 3,
 })
 
 // custom select query to get one field of record with id = 3, check errors
-q2, err := dbh.Prepare("SELECT some_field FROM table_name WHERE id = :id")
+q3, err := dbh.Prepare("SELECT some_field FROM table_name WHERE id = :id")
 
 var str string
-_, err = q.Query(&str, map[string]interface{}{
+_, err = q3.Query(&str, map[string]interface{}{
   "id": 3,
 })
 
