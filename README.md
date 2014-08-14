@@ -36,7 +36,7 @@ type testType struct {
 }
 ```
 
-Also `dbopt:"skip"` tag is supported and means that field will be skipped and nod mapped to database table. if `db` tag is not set - field name will be used instead.
+Also `dbopt:"skip"` tag is supported and means that field will be skipped and not mapped to database table. if `db` tag is not set - field name will be used instead.
 
 Usage
 ========
