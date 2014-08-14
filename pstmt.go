@@ -154,13 +154,13 @@ func (pstmt *Pstmt) Query(i interface{}, params interface{}) (int64, error) {
 		// return slice of pointers to structs
 		returnSlice = true
 		returnPtrType = sliceType.Elem()
+
+		if returnPtrType.Kind() != reflect.Ptr {
+			return 0, errors.New("dbhelper: pointer to a slice of pointers to structures expected")
+		}
 	} else {
 		// return pointer
 		returnPtrType = slicePtrType
-	}
-
-	if returnPtrType.Kind() != reflect.Ptr {
-		return 0, errors.New("dbhelper: pointer to a slice of pointers to structures expected")
 	}
 
 	// get return type
