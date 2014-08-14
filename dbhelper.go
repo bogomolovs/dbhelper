@@ -35,7 +35,12 @@ func typeOf(i interface{}) (reflect.Type, error) {
 		return nil, errorNil
 	}
 
-	return reflect.Indirect(reflect.ValueOf(i)).Type(), nil
+	t := reflect.TypeOf(i)
+	if t.Kind() != reflect.Ptr {
+		return t, nil
+	}
+
+	return t.Elem(), nil
 }
 
 func wrapError(err error) error {

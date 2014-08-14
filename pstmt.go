@@ -141,6 +141,9 @@ func (pstmt *Pstmt) Query(i interface{}, params interface{}) (int64, error) {
 
 	// get slice value
 	sliceValue := slicePtrValue.Elem()
+	if !sliceValue.IsValid() {
+		return 0, errors.New("dbhelper: cannot use pointer to nil")
+	}
 
 	// get slice type
 	sliceType := sliceValue.Type()
