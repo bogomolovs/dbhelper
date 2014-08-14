@@ -1,7 +1,9 @@
 Go Database Helper
 ========
 
-This is a simple Go database/sql helper package. It is inspired by gorp, but uses prepared statements. Queries for insert, update and delete are prepared automatically when new table is added. Other statements can be prepared using dbhelper.Prepare(). It supports automatic update of:
+This is a simple Go database helper package. It is inspired by `gorp`, but uses prepared statements. It helps to interact with sql.DB by generating, preparing and executing queries. It marshals Go structs to and from databases and uses database/sql.
+Queries for insert, update and delete are prepared automatically, when new table is added. Other statements can be prepared using dbhelper.Prepare(). It supports automatic update of:
+
 * record id (after inserting)
 * created time (after inserting)
 * modified time (after inserting and updating)
@@ -34,7 +36,7 @@ type testType struct {
 }
 ```
 
-Also **dbopt:"skip"** tag is supported and means that field will be skipped and nod mapped to database table.
+Also `dbopt:"skip"` tag is supported and means that field will be skipped and nod mapped to database table.
 
 Usage
 ========
@@ -43,6 +45,7 @@ Usage
 // create connection to database, check error
 db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s sslmode=disable",
     address, port, dbname, username, password))
+defer db.Close()
 
 // create database helper
 dbh := dbhelper.New(db, dbhelper.Posgresql{})
@@ -87,4 +90,17 @@ err = dbh.Delete(s)
 
 ```
 
-See tests for examples.
+See tests for examples. Embedded structures should be supported as weel, but I have not tested this.
+
+Performance
+========
+
+The main motivation to do this was performance. Prepared queries should work faster and I tried to add as small overhead as possible for the convenience of named placeholders and mapping results to structure fields.
+
+Some benchmark results (average of 5 runs):
+
+> BenchmarkPreparedQueries      2000      851048 ns/op
+> BenchmarkDbHelper             2000      914452 ns/op
+> BenchmarkGorp                 1000     1409280 ns/op
+
+Not sure how reliable these results are, but one can see that the overhead is quite small. The comparison to `gorp` here is not really fare, because it does not use prepared queries. However, this project was inspired by it and would make no sense if it was slower.
