@@ -19,12 +19,16 @@ import (
 	// "time"
 )
 
+type testEmbedded struct {
+	T string `db:"text"`
+}
+
 type testType struct {
-	Id int64  `db:"id" dbopt:"id,auto"`
-	T  string `db:"text"`
-	B  bool   `db:"b"`
-	C  int64  `db:"c" dbopt:"created"`
-	M  int64  `db:"m" dbopt:"modified"`
+	Id int64 `db:"id" dbopt:"id,auto"`
+	B  bool  `db:"b"`
+	C  int64 `db:"c" dbopt:"created"`
+	M  int64 `db:"m" dbopt:"modified"`
+	testEmbedded
 }
 
 func initDb() (*sql.DB, error) {
@@ -47,7 +51,7 @@ func TestQuery(t *testing.T) {
 	}
 
 	// insert
-	t1 := &testType{T: "test1", B: true}
+	t1 := &testType{testEmbedded: testEmbedded{T: "test1"}, B: true}
 	err = dbh.Insert(t1)
 	if err != nil {
 		t.Error(err)
@@ -58,7 +62,7 @@ func TestQuery(t *testing.T) {
 
 	// time.Sleep(1 * time.Second)
 
-	t2 := &testType{T: "test2", B: false}
+	t2 := &testType{testEmbedded: testEmbedded{T: "test2"}, B: false}
 	err = dbh.Insert(t2)
 	if err != nil {
 		t.Error(err)
@@ -70,7 +74,7 @@ func TestQuery(t *testing.T) {
 	// time.Sleep(2 * time.Second)
 
 	// update
-	t1.T = "test3"
+	t1.T = "another text"
 	t1.B = false
 	err = dbh.Update(t1)
 	if err != nil {

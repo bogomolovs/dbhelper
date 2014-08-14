@@ -107,7 +107,21 @@ err = q.Query(&str, map[string]interface{}{
 err = dbh.Delete(s)
 ```
 
-See tests for examples. Embedded structures should be supported as weel, but I have not tested this.
+See tests for examples. Embedded structures are also supported, so this will work:
+
+```go
+type testEmbedded struct {
+  T string `db:"text"`
+}
+
+type testType struct {
+  Id int64 `db:"id" dbopt:"id,auto"`
+  B  bool  `db:"b"`
+  C  int64 `db:"c" dbopt:"created"`
+  M  int64 `db:"m" dbopt:"modified"`
+  testEmbedded
+}
+```
 
 Benchmarks
 ========

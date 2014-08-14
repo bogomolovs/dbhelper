@@ -48,7 +48,7 @@ func BenchmarkPreparedQueries(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		// insert
-		t1 := &testType{T: "test1", B: true}
+		t1 := &testType{testEmbedded: testEmbedded{T: "test1"}, B: true}
 		var id int64
 		err = queryInsert.QueryRow(t1.T, t1.B, t1.C, t1.M).Scan(&id)
 		if err != nil {
@@ -96,7 +96,7 @@ func BenchmarkDbHelper(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		// insert
-		t1 := &testType{T: "test1", B: true}
+		t1 := &testType{testEmbedded: testEmbedded{T: "test1"}, B: true}
 		err = dbh.Insert(t1)
 		if err != nil {
 			b.Error(err)
@@ -137,7 +137,7 @@ func BenchmarkGorp(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		// insert
-		t1 := &testType{T: "test1", B: true}
+		t1 := &testType{testEmbedded: testEmbedded{T: "test1"}, B: true}
 		err = dbmap.Insert(t1)
 		if err != nil {
 			b.Error(err)
