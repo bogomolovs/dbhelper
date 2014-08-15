@@ -53,9 +53,11 @@ type dbTable struct {
 	numField     int
 	numFieldAuto int
 
-	insertQuery *Pstmt
-	updateQuery *Pstmt
-	deleteQuery *Pstmt
+	insertQuery     *Pstmt
+	updateQuery     *Pstmt
+	deleteQuery     *Pstmt
+	selectByIdQuery *Pstmt
+	selectQueries   map[string]*Pstmt
 }
 
 // Returns pointer to new database table structure.
@@ -69,10 +71,11 @@ func (dbh *DbHelper) newDbTable(t reflect.Type, name string) (*dbTable, error) {
 
 	// new database table structure
 	tbl := &dbTable{
-		dbHelper:   dbh,
-		structType: t,
-		name:       name,
-		fields:     make(map[string]*dbField),
+		dbHelper:      dbh,
+		structType:    t,
+		name:          name,
+		fields:        make(map[string]*dbField),
+		selectQueries: make(map[string]*Pstmt),
 	}
 
 	// check all fields in the structure
@@ -334,8 +337,17 @@ func (tbl *dbTable) prepareStandardQueries() error {
 	deleteQuery := fmt.Sprintf("DELETE FROM %s WHERE %s = %s",
 		tbl.name, tbl.idField.column, getNamedPlaceholder(tbl.idField.column))
 
-	// prepare udpate query
+	// prepare delete query
 	tbl.deleteQuery, err = tbl.dbHelper.Prepare(deleteQuery)
+	if err != nil {
+		return err
+	}
+
+	// select by id SQL query
+	selectByIdQuery := fmt.Sprintf("SELECT * FROM %s WHERE %s = :%s", tbl.name, tbl.idField.column, tbl.idField.column)
+
+	// prepare get by id query
+	tbl.selectByIdQuery, err = tbl.dbHelper.Prepare(selectByIdQuery)
 	if err != nil {
 		return err
 	}

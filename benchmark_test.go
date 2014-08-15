@@ -17,6 +17,19 @@ import (
 	"testing"
 )
 
+func createTestStruct() *testStruct {
+	t1 := &testStruct{}
+	t1.Text = "text 1"
+	t1.Bool = true
+
+	return t1
+}
+
+func modifyTestStruct(t *testStruct) {
+	t.Text = "new text"
+	t.Bool = false
+}
+
 func BenchmarkPreparedQueries(b *testing.B) {
 	db, err := initDb()
 	if err != nil {
@@ -48,9 +61,9 @@ func BenchmarkPreparedQueries(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		// insert
-		t1 := &testType{testEmbedded: testEmbedded{T: "test1"}, B: true}
+		t1 := createTestStruct()
 		var id int64
-		err = queryInsert.QueryRow(t1.T, t1.B, t1.C, t1.M).Scan(&id)
+		err = queryInsert.QueryRow(t1.Text, t1.Bool, t1.Created, t1.Modified).Scan(&id)
 		if err != nil {
 			b.Error(err)
 			return
@@ -59,9 +72,8 @@ func BenchmarkPreparedQueries(b *testing.B) {
 		t1.Id = id
 
 		// update
-		t1.T = "new text"
-		t1.B = false
-		_, err = queryUpdate.Exec(t1.T, t1.B, t1.M)
+		modifyTestStruct(t1)
+		_, err = queryUpdate.Exec(t1.Text, t1.Bool, t1.Modified)
 		if err != nil {
 			b.Error(err)
 			return
@@ -86,7 +98,7 @@ func BenchmarkDbHelper(b *testing.B) {
 	defer db.Close()
 
 	dbh := New(db, Postgresql{})
-	err = dbh.AddTable(testType{}, "test")
+	err = dbh.AddTable(testStruct{}, "test")
 	if err != nil {
 		b.Error(err)
 		return
@@ -96,7 +108,8 @@ func BenchmarkDbHelper(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		// insert
-		t1 := &testType{testEmbedded: testEmbedded{T: "test1"}, B: true}
+		t1 := createTestStruct()
+
 		err = dbh.Insert(t1)
 		if err != nil {
 			b.Error(err)
@@ -104,8 +117,7 @@ func BenchmarkDbHelper(b *testing.B) {
 		}
 
 		// update
-		t1.T = "new text"
-		t1.B = false
+		modifyTestStruct(t1)
 		_, err = dbh.Update(t1)
 		if err != nil {
 			b.Error(err)
@@ -131,13 +143,14 @@ func BenchmarkGorp(b *testing.B) {
 	defer db.Close()
 
 	dbmap := &gorp.DbMap{Db: db, Dialect: gorp.PostgresDialect{}}
-	dbmap.AddTableWithName(testType{}, "test").SetKeys(true, "Id")
+	dbmap.AddTableWithName(testStruct{}, "test").SetKeys(true, "Id")
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		// insert
-		t1 := &testType{testEmbedded: testEmbedded{T: "test1"}, B: true}
+		t1 := createTestStruct()
+
 		err = dbmap.Insert(t1)
 		if err != nil {
 			b.Error(err)
@@ -145,8 +158,7 @@ func BenchmarkGorp(b *testing.B) {
 		}
 
 		// update
-		t1.T = "new text"
-		t1.B = false
+		modifyTestStruct(t1)
 		_, err = dbmap.Update(t1)
 		if err != nil {
 			b.Error(err)

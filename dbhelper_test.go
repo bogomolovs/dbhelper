@@ -19,16 +19,28 @@ import (
 	// "time"
 )
 
-type testEmbedded struct {
-	T string `db:"text"`
+type testEmbeddedStruct struct {
+	// data field
+	Text string `db:"text"`
 }
 
-type testType struct {
+type testStruct struct {
+	// structure must have a field with dbopt: "id"
+	// this field will be automatically updated on record insertion
 	Id int64 `db:"id" dbopt:"id,auto"`
-	B  bool  `db:"b"`
-	C  int64 `db:"c" dbopt:"created"`
-	M  int64 `db:"m" dbopt:"modified"`
-	testEmbedded
+
+	// data field
+	Bool bool `db:"b"`
+
+	// this field will be automatically updated on record insertion
+	Created int64 `db:"c" dbopt:"created"`
+
+	// this field will be automatically updated on record insertion
+	// and modification
+	Modified int64 `db:"m" dbopt:"modified"`
+
+	// embedded structures are supported
+	testEmbeddedStruct
 }
 
 func initDb() (*sql.DB, error) {
@@ -37,112 +49,175 @@ func initDb() (*sql.DB, error) {
 }
 
 func TestQuery(t *testing.T) {
+	// create connection to DB
 	db, err := initDb()
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
+	// create DbHelper
 	dbh := New(db, Postgresql{})
-	err = dbh.AddTable(testType{}, "test")
+	err = dbh.AddTable(testStruct{}, "test")
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
 	// insert
-	t1 := &testType{testEmbedded: testEmbedded{T: "test1"}, B: true}
+	t1 := &testStruct{}
+	t1.Text = "text 1"
+	t1.Bool = true
+
 	err = dbh.Insert(t1)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	fmt.Println(t1.Id)
+	fmt.Printf("First record id: %d\n\n", t1.Id)
 
 	// time.Sleep(1 * time.Second)
 
-	t2 := &testType{testEmbedded: testEmbedded{T: "test2"}, B: false}
+	t2 := &testStruct{}
+	t2.Text = "text 2"
+	t2.Bool = false
+
 	err = dbh.Insert(t2)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	fmt.Println(t2.Id)
+	fmt.Printf("Second record id: %d\n\n", t2.Id)
 
 	// time.Sleep(2 * time.Second)
 
 	// update
-	t1.T = "another text"
-	t1.B = false
+	t1.Text = "another text"
+	t1.Bool = false
+
 	_, err = dbh.Update(t1)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	// select
-	q, err := dbh.Prepare("SELECT * FROM test")
+	// select all records
+	queryAllRecords, err := dbh.Prepare("SELECT * FROM test")
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	var res []*testType
-	_, err = q.Query(&res, nil)
+	var allRecords []*testStruct
+	_, err = queryAllRecords.Query(&allRecords, nil)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	for _, r := range res {
+	fmt.Println("Select all records:")
+	for _, r := range allRecords {
 		fmt.Println(*r)
 	}
 
-	// select one record
-	var res1 testType
-	_, err = q.Query(&res1, nil)
+	fmt.Println()
+
+	// select first record
+	var firstRecord testStruct
+	_, err = queryAllRecords.Query(&firstRecord, nil)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	fmt.Println(res1)
+	fmt.Printf("Select first record:\n%v\n\n", firstRecord)
 
-	// select one field
+	// select one record with specific id
+	queryRecordById, err := dbh.Prepare("SELECT * FROM test WHERE id = :id")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	var record testStruct
+	_, err = queryRecordById.Query(&record, map[string]interface{}{
+		"id": t2.Id,
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	fmt.Printf("Select one record by id:\n%v\n\n", record)
+
+	// or simplier
+	var record2 testStruct
+	_, err = queryRecordById.Query(&record2, t2.Id)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	fmt.Printf("Select one record by id (simplier):\n%v\n\n", record2)
+
+	// or even simplier
+	var record3 testStruct
+	_, err = dbh.SelectById(&record3, t2.Id)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	fmt.Printf("Select one record by id (even simplier):\n%v\n\n", record3)
+
+	// select one record with specific field value
+	// on the first selection by field, query is prepared
+	// and stored, so next time selection by the same
+	// field will be performed using already prepared query
+	var record4 testStruct
+	_, err = dbh.SelectBy(&record4, "text", t1.Text)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	fmt.Printf("Select one record by field:\n%v\n\n", record4)
+
+	// select one field of record with specific id
 	queryString, err := dbh.Prepare("SELECT text FROM test WHERE id = :id")
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	var s string
-	num, err := queryString.Query(&s, map[string]interface{}{
+	var str string
+	num, err := queryString.Query(&str, map[string]interface{}{
 		"id": t1.Id,
 	})
-
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	fmt.Println(num)
-	fmt.Println(s)
+	fmt.Println("Select one field:")
+	fmt.Printf("Number of fields processed: %d\n", num)
+	fmt.Printf("Field value: %s\n\n", str)
 
 	// or simplier
-	var s2 string
-	num, err = queryString.Query(&s2, t1.Id)
-
+	var str2 string
+	num, err = queryString.Query(&str2, t1.Id)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	fmt.Println(num)
-	fmt.Println(s2)
+	fmt.Println("Select one field (simplier):")
+	fmt.Printf("Number of fields processed: %d\n", num)
+	fmt.Printf("Field value: %s\n\n", str2)
 
-	// delete
+	// delete records
 	_, err = dbh.Delete(t1)
 	if err != nil {
 		t.Error(err)

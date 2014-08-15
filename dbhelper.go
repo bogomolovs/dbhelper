@@ -35,12 +35,25 @@ func typeOf(i interface{}) (reflect.Type, error) {
 		return nil, errorNil
 	}
 
+	// get type
 	t := reflect.TypeOf(i)
-	if t.Kind() != reflect.Ptr {
-		return t, nil
+
+	// if t is pointer
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
 	}
 
-	return t.Elem(), nil
+	// if t is slice
+	if t.Kind() == reflect.Slice {
+		t = t.Elem()
+
+		// if t is slice of pointers
+		if t.Kind() == reflect.Ptr {
+			t = t.Elem()
+		}
+	}
+
+	return t, nil
 }
 
 func wrapError(err error) error {
@@ -176,33 +189,63 @@ func (dbh *DbHelper) Prepare(query string) (*Pstmt, error) {
 	return pstmp, nil
 }
 
-// Prepares standard select SQL query by value of one column.
-// Prepared query can be executed with different parameter values.
-func (dbh *DbHelper) PrepareSelect(i interface{}, column string) (*Pstmt, error) {
+// Performs a select by id query.
+func (dbh *DbHelper) SelectById(i interface{}, id int64) (int64, error) {
 	// get type
 	t, err := typeOf(i)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	// get table
 	tbl, err := dbh.getTable(t)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	// check column name
-	_, ok := tbl.fields[column]
+	// perform query
+	return tbl.selectByIdQuery.Query(i, id)
+}
+
+func (dbh *DbHelper) SelectBy(i interface{}, column string, value interface{}) (int64, error) {
+	// get type
+	t, err := typeOf(i)
+	if err != nil {
+		return 0, err
+	}
+
+	// get table
+	tbl, err := dbh.getTable(t)
+	if err != nil {
+		return 0, err
+	}
+
+	// check if query was already prepared
+	q, ok := tbl.selectQueries[column]
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("dbhelper: structure type '%v' has no field assigned to column '%s' of table '%s'",
-			t, column, tbl.name))
+		// prepare query
+		// check column name
+		_, ok := tbl.fields[column]
+		if !ok {
+			return 0, errors.New(fmt.Sprintf("dbhelper: structure type '%v' has no field assigned to column '%s' of table '%s'",
+				t, column, tbl.name))
+		}
+
+		// select query
+		query := fmt.Sprintf("SELECT * FROM %s WHERE %s = :%s", tbl.name, column, column)
+
+		// prepare query
+		q, err = dbh.Prepare(query)
+		if err != nil {
+			return 0, err
+		}
+
+		// store prepared query
+		tbl.selectQueries[column] = q
 	}
 
-	// select query
-	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = :%s", tbl.name, column, column)
-
-	// prepare query
-	return dbh.Prepare(query)
+	// perform query
+	return q.Query(i, value)
 }
 
 // Prepares parameters for standard query.

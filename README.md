@@ -2,7 +2,7 @@ Go Database Helper
 ========
 
 This is a simple Go database helper package. It is inspired by `gorp`, but uses prepared statements. It helps to interact with sql.DB by generating, preparing and executing queries. It marshals Go structs to and from databases and uses database/sql.
-Queries for insert, update and delete are prepared automatically, when new table is added. Other statements can be prepared using dbhelper.Prepare(). It supports automatic update of:
+Queries for insert, update, delete and select by id are prepared automatically, when new table is added. Queries to select by one column are prepared automatically when dbhelper.SelectBy() is called first time for corresponding column. Other statements can be prepared using dbhelper.Prepare(). Following structure fields (and columns) are set automatically:
 
 * record id (after inserting)
 * created time (after inserting)
@@ -42,85 +42,110 @@ Usage
 ========
 
 ```go
-type someStructType struct {
+type testEmbeddedStruct struct {
+  // data field
+  Text string `db:"text"`
+}
+
+type testStruct struct {
   // structure must have a field with dbopt: "id"
   // this field will be automatically updated on record insertion
   Id int64 `db:"id" dbopt:"id,auto"`
 
   // data field
-  SomeField string `db:"some_field"`
+  Bool bool `db:"b"`
 
   // this field will be automatically updated on record insertion
-  Created int64 `db:"created" dbopt:"created"`
-  
+  Created int64 `db:"c" dbopt:"created"`
+
   // this field will be automatically updated on record insertion
   // and modification
-  Modified int64 `db:"modified" dbopt:"modified"`
+  Modified int64 `db:"m" dbopt:"modified"`
+
+  // embedded structures are supported
+  testEmbeddedStruct
 }
 ```
 
 ```go
+// error checks are omitted to make this listing shorter
+// see tests for complete examples
+
 // create connection to database, check error
 db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s sslmode=disable",
     address, port, dbname, username, password))
 defer db.Close()
 
-// create database helper
-dbh := dbhelper.New(db, dbhelper.Postgresql{})
+// create DbHelper
+dbh := New(db, Postgresql{})
+err = dbh.AddTable(testStruct{}, "test")
 
-// map type to table, check error
-err = dbh.AddTable(someStructType{}, "table_name")
+// insert
+t1 := &testStruct{}
+t1.Text = "text 1"
+t1.Bool = true
 
-// insert new record, id, modified (if present) and created (if present)
-// fields are automatically updated, check error
-var s *someStructType
-s = newStruct()
-err = dbh.Insert(s)
+err = dbh.Insert(t1)
 
-// update record, modified field (if present) is automatically updated
-s.SomeField = "new_value"
-_, err = dbh.Update(s)
+t2 := &testStruct{}
+t2.Text = "text 2"
+t2.Bool = false
 
-// custom select query to get all records, check errors
-q1, err := dbh.Prepare("SELECT * FROM table_name")
+err = dbh.Insert(t2)
 
-var a []*someStructType
-_, err = q1.Query(&a, nil)
+// update
+t1.Text = "another text"
+t1.Bool = false
 
-// custom select query to get record with id = 3, check errors
-q2, err := dbh.Prepare("SELECT * FROM table_name WHERE id = :id")
+_, err = dbh.Update(t1)
 
-var r someStructType
-_, err = q2.Query(&r, map[string]interface{}{
-  "id": 3,
+// select all records
+var allRecords []*testStruct
+
+queryAllRecords, err := dbh.Prepare("SELECT * FROM test")
+_, err = queryAllRecords.Query(&allRecords, nil)
+
+// select first record
+var firstRecord testStruct
+_, err = queryAllRecords.Query(&firstRecord, nil)
+
+// select one record with specific id
+var record testStruct
+
+queryRecordById, err := dbh.Prepare("SELECT * FROM test WHERE id = :id")
+_, err = queryRecordById.Query(&record, map[string]interface{}{
+  "id": t2.Id,
 })
 
-// custom select query to get one field of record with id = 3, check errors
-q3, err := dbh.Prepare("SELECT some_field FROM table_name WHERE id = :id")
+// or simplier
+var record2 testStruct
+_, err = queryRecordById.Query(&record2, t2.Id)
 
+// or even simplier
+var record3 testStruct
+_, err = dbh.SelectById(&record3, t2.Id)
+
+// select one record with specific field value
+// on the first selection by field, query is prepared
+// and stored, so next time selection by the same
+// field will be performed using already prepared query
+var record4 testStruct
+_, err = dbh.SelectBy(&record4, "text", t1.Text)
+
+// select one field of record with specific id
 var str string
-_, err = q3.Query(&str, map[string]interface{}{
-  "id": 3,
+queryString, err := dbh.Prepare("SELECT text FROM test WHERE id = :id")
+_, err := queryString.Query(&str, map[string]interface{}{
+  "id": t1.Id,
 })
 
-// delete record
-_, err = dbh.Delete(s)
-```
+// or simplier
+var str2 string
+_, err = queryString.Query(&str2, t1.Id)
 
-See tests for examples. Embedded structures are also supported, so this will work:
-
-```go
-type testEmbedded struct {
-  T string `db:"text"`
-}
-
-type testType struct {
-  Id int64 `db:"id" dbopt:"id,auto"`
-  B  bool  `db:"b"`
-  C  int64 `db:"c" dbopt:"created"`
-  M  int64 `db:"m" dbopt:"modified"`
-  testEmbedded
-}
+// delete records
+_, err = dbh.Delete(t1)
+_, err = dbh.Delete(t2)
 ```
 
 Benchmarks

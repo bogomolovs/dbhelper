@@ -120,6 +120,10 @@ func (pstmt *Pstmt) Exec(params interface{}) (int64, error) {
 }
 
 // Executes prepared query with provided parameter values. Returns number of processed rows.
+// If i is a pointer to slice of pointers - all rows are mapped.
+// If i is a pointer to structure - only the first matched row is mapped.
+// If i is a pointer to another supported data type - corresponding column value
+// of the first matched row is mapped.
 // If query has only one parameter, params can be the value of that parameter.
 // If query has more than one parameter, params must be a map[string]interface{}.
 func (pstmt *Pstmt) Query(i interface{}, params interface{}) (int64, error) {
@@ -147,6 +151,13 @@ func (pstmt *Pstmt) Query(i interface{}, params interface{}) (int64, error) {
 
 	// get slice type
 	sliceType := sliceValue.Type()
+	if sliceType.Kind() == reflect.Ptr {
+		return 0, errors.New("dbhelper: cannot use pointer to pointer")
+	}
+
+	if sliceType.Kind() == reflect.Interface {
+		return 0, errors.New("dbhelper: wrong type of i")
+	}
 
 	// get return pointer type
 	var returnPtrType reflect.Type
@@ -156,7 +167,7 @@ func (pstmt *Pstmt) Query(i interface{}, params interface{}) (int64, error) {
 		returnPtrType = sliceType.Elem()
 
 		if returnPtrType.Kind() != reflect.Ptr {
-			return 0, errors.New("dbhelper: pointer to a slice of pointers to structures expected")
+			return 0, errors.New("dbhelper: pointer to a slice of pointers expected")
 		}
 	} else {
 		// return pointer
@@ -252,7 +263,7 @@ func (pstmt *Pstmt) Query(i interface{}, params interface{}) (int64, error) {
 		num++
 
 		if returnSlice {
-			// append pointer to new structure to slice
+			// append pointer to slice
 			sliceValue.Set(reflect.Append(sliceValue, returnPtrValue))
 		} else {
 			break
