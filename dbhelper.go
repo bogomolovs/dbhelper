@@ -207,6 +207,7 @@ func (dbh *DbHelper) SelectById(i interface{}, id int64) (int64, error) {
 	return tbl.selectByIdQuery.Query(i, id)
 }
 
+// Performs a select by column query.
 func (dbh *DbHelper) SelectBy(i interface{}, column string, value interface{}) (int64, error) {
 	// get type
 	t, err := typeOf(i)
@@ -246,6 +247,24 @@ func (dbh *DbHelper) SelectBy(i interface{}, column string, value interface{}) (
 
 	// perform query
 	return q.Query(i, value)
+}
+
+// Performs a select all query.
+func (dbh *DbHelper) SelectAll(i interface{}) (int64, error) {
+	// get type
+	t, err := typeOf(i)
+	if err != nil {
+		return 0, err
+	}
+
+	// get table
+	tbl, err := dbh.getTable(t)
+	if err != nil {
+		return 0, err
+	}
+
+	// perform query
+	return tbl.selectAllQuery.Query(i, nil)
 }
 
 // Prepares parameters for standard query.

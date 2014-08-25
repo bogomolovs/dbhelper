@@ -57,6 +57,7 @@ type dbTable struct {
 	updateQuery     *Pstmt
 	deleteQuery     *Pstmt
 	selectByIdQuery *Pstmt
+	selectAllQuery  *Pstmt
 	selectQueries   map[string]*Pstmt
 }
 
@@ -348,6 +349,15 @@ func (tbl *dbTable) prepareStandardQueries() error {
 
 	// prepare get by id query
 	tbl.selectByIdQuery, err = tbl.dbHelper.Prepare(selectByIdQuery)
+	if err != nil {
+		return err
+	}
+
+	// select all SQL query
+	selectAllQuery := fmt.Sprintf("SELECT * FROM %s", tbl.name)
+
+	// prepare get by id query
+	tbl.selectAllQuery, err = tbl.dbHelper.Prepare(selectAllQuery)
 	if err != nil {
 		return err
 	}

@@ -14,8 +14,9 @@ package dbhelper
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/lib/pq"
 	"testing"
+
+	_ "github.com/lib/pq"
 	// "time"
 )
 
@@ -118,6 +119,22 @@ func TestQuery(t *testing.T) {
 	}
 
 	fmt.Println("Select all records:")
+	for _, r := range allRecords {
+		fmt.Println(*r)
+	}
+
+	fmt.Println()
+
+	// or simplier
+	var allRecords2 []*testStruct
+	_, err = dbh.SelectAll(&allRecords2)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	fmt.Println("Select all records (simplier):")
 	for _, r := range allRecords {
 		fmt.Println(*r)
 	}
