@@ -93,7 +93,7 @@ func (pstmt *Pstmt) exec(params interface{}) (sql.Result, error) {
 	}
 
 	if err != nil {
-		return nil, wrapError(nil)
+		return nil, wrapError(err)
 	}
 
 	return res, nil
