@@ -20,19 +20,21 @@ Structure tags are supported:
 
 ```go
 type testType struct {
-  // db column name is 'id', it is auto-incremented and it stores record id
-  Id   int64  `db:"id" dbopt:"id,auto"`
+  // db column name is 'id' (if `db` tag is missing, column name will default to
+  // the field name, so in this case it would be 'Id'), it is auto-incremented and
+  // it stores record id
+  Id       int64  `db:"id" dbopt:"id,auto"`
   
   // db column name is 'text'
-  Text string `db:"text"`
+  Text     string `db:"text"`
   
-  // db column name is 'c', this field will be automatically set with the time
+  // db column name is 'created', this field will be automatically set with the time
   // of record creation. Time is stored as UNIX timestamp (UTC timezone)
-  C    int64  `db:"c" dbopt:"created"`
+  Created  int64  `db:"created" dbopt:"created"`
   
-  // db column name is 'm', this field will be automatically updated with the time
-  // of last record update. Time is stored as UNIX timestamp (UTC timezone)
-  M    int64  `db:"m" dbopt:"modified"`  
+  // db column name is 'modified', this field will be automatically updated with the
+  // time of last record update. Time is stored as UNIX timestamp (UTC timezone)
+  Modified int64  `db:"modified" dbopt:"modified"`  
 }
 ```
 
