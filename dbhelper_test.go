@@ -1,4 +1,4 @@
-// Copyright 2014 Sergii Bogomolov. All rights reserved.
+// Copyright 2015 Sergii Bogomolov. All rights reserved.
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
@@ -7,7 +7,7 @@
 // database/sql.
 //
 // Source code and project home:
-// https://github.com/biggunsv/dbhelper
+// https://github.com/bogomolovs/dbhelper
 //
 package dbhelper
 
